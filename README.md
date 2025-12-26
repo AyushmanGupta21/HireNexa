@@ -1,4 +1,4 @@
-# 🚀 HireNexa - Blockchain-Powered AI Portfolio Platform
+# 🚀 HireNexa - Blockchain-Powered AI Portfolio Platform.
 
 > **Celo-Native** • **AI-Powered** • **NFT Credentials** • **Auto-Updating Portfolios**
 
