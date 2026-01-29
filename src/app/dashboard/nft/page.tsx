@@ -9,6 +9,7 @@ export default function ViewNFTPage() {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [nftTokenId, setNftTokenId] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [connecting, setConnecting] = useState(false)
 
   useEffect(() => {
     loadNFTInfo()
@@ -18,13 +19,13 @@ export default function ViewNFTPage() {
     try {
       const response = await fetch('/api/user/profile')
       const data = await response.json()
-      
+
       setWalletAddress(data.wallet_address || '')
-      
+
       // Get portfolio to find NFT token ID
       const portfolioResponse = await fetch('/api/portfolio/view')
       const portfolioData = await portfolioResponse.json()
-      
+
       setNftTokenId(portfolioData.portfolio?.nft_token_id || '')
     } catch (error) {
       console.error('Error loading NFT info:', error)
@@ -33,7 +34,50 @@ export default function ViewNFTPage() {
     }
   }
 
-  const celoExplorerUrl = walletAddress 
+  const connectWallet = async () => {
+    setConnecting(true)
+    try {
+      // Check if MetaMask is installed
+      if (typeof window.ethereum === 'undefined') {
+        alert('MetaMask is not installed! Please install MetaMask to connect your wallet.')
+        setConnecting(false)
+        return
+      }
+
+      // Request account access
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      })
+
+      const address = accounts[0]
+
+      // Save wallet address to database
+      const response = await fetch('/api/user/update-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_address: address })
+      })
+
+      if (response.ok) {
+        setWalletAddress(address)
+        alert('Wallet connected successfully! ✅')
+      } else {
+        const error = await response.json()
+        alert(`Failed to save wallet address: ${error.error}`)
+      }
+    } catch (error: any) {
+      console.error('Error connecting wallet:', error)
+      if (error.code === 4001) {
+        alert('Connection rejected. Please approve the connection in MetaMask.')
+      } else {
+        alert('Failed to connect wallet. Please try again.')
+      }
+    } finally {
+      setConnecting(false)
+    }
+  }
+
+  const celoExplorerUrl = walletAddress
     ? `https://celo-sepolia.blockscout.com/address/${walletAddress}?tab=tokens`
     : ''
 
@@ -101,7 +145,28 @@ export default function ViewNFTPage() {
                     </a>
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No wallet connected. Connect MetaMask first.</p>
+                  <div className="space-y-2">
+                    <p className="text-gray-400 text-sm mb-3">
+                      Connect your MetaMask wallet to view and mint your Portfolio NFT.
+                    </p>
+                    <button
+                      onClick={connectWallet}
+                      disabled={connecting}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-[#3B82F6]/50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {connecting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Wallet className="w-4 h-4" />
+                          Connect MetaMask Wallet
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 
