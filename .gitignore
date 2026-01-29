@@ -43,6 +43,9 @@ deployments.json
 
 #ENV LOCal
 .env.local
+.env.production
+.env.production.reference
+.env*.local
 
 #docs
 /docs
